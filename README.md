@@ -181,11 +181,52 @@ APM использует именно SPI для взаимодейстивия 
 <http://forum.virt2real.ru/viewtopic.php?f=38&t=13420&p=18238>
 
 
+01-Feb-2014
+===========
+
+Итак, приехал мне [GY-87](http://www.ebay.com/itm/231017647381), который на борту несёт:
+
+- акселерометр+гироскоп MPU6050
+- Барометр BPM180
+- Магнетометр HMC5883L
+
+Хочу описать особенность данного модуля - сразу после включения на шине i2c не видно магнетометра.
+Похоже, что аксел и барометр прицеплены к основной шине i2c, а магнетометр - на вторичной i2c шине MPU6050.
+
+Что-то вроде этого:
+
+	[v2r] ==o==>MPU6050 ---> HMC5883L
+			\
+			 \===> BPM180
+
+После старта MPU6050 не пропускает ничего из внешней шины во вторичную, самолично пожирая тактирующий сигнал и данные.
+HMC5883L ничего не получает от хоста.
+
+По даташиту, чтобы хост увидел устройства на вторично шине,  MPU6050 надо переключить в режим i2c bypass путём установки бита 2 регистра 55
+Это равносильно тому, что лини SCL и SDA обоих шин соедияются внутри  MPU6050. Как-то так.
+
+Вот буквы из даташита
+
+	4.15 Register 55 – INT Pin / Bypass Enable Configuration INT_PIN_CFG
+
+	When I2C_BYPASS_EN is equal to 1 and I2C_MST_EN (Register 106 bit[5]) is equal to 0, the host
+	application processor will be able to directly access the auxiliary I2C bus of the MPU-60X0. When
+	this bit is equal to 0, the host application processor will not be able to directly access the auxiliary I2C
+	bus of the MPU-60X0 regardless of the state of I2C_MST_EN.
+
+Вот такая вот есть особенность MPU6050 и модуля GY-87  в частности. 
+На кой ляд два девайса повесили на основную шину, а третий - на вторичную, мне не понятно.
+
+Теперь для работы с магнетометром надо ещё аксель инициализировать.
+Проблему решил, но осадок остался.
+
 ArduPilot TODOs
 ===============
 
 - MPU6050 support (done)
-- MAVLink over UDP
-- v2r PWM support
+- MAVLink over UDP (done with dirty hacks )
+- v2r PWM support (done with dirty hacks )
+- GPS
+- Barometer
 
 
